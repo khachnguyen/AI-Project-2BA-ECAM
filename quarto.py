@@ -164,7 +164,7 @@ class QuartoClient(game.GameClient):
         a = randint(0,len(test1))
 
         move['nextPiece'] = a
-
+        test = 1
         # apply the move to check for quarto
 
 
