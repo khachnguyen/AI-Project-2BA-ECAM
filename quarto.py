@@ -8,7 +8,7 @@ import socket
 import sys
 import random
 import json
-from random import randint
+
 
 from lib import game
 
@@ -44,7 +44,9 @@ class QuartoState(game.GameState):
     def applymove(self, move):
         #{pos: 8, quarto: true, nextPiece: 2}
         state = self._state['visible']
+        state['pieceToPlay'] = move['nextPiece'] #J'ai deplace avant le try compare au code du prof pcq le PiecetoPlay ne changeait pas
         if state['pieceToPlay'] is not None:
+            print("piece",state['pieceToPlay'])
             try:
                 if state['board'][move['pos']] is not None:
                     raise game.InvalidMoveException('The position is not free')
@@ -153,18 +155,24 @@ class QuartoClient(game.GameClient):
     def _nextmove(self, state):
         visible = state._state['visible']
         move = {}
+        print(visible)
 
-        # select the first free position
+        
+        #List of index of the free place to put a piece
+        ls_test = [i for i,x in enumerate(visible['board']) if x == None]
+        print("Liste Indice",ls_test)       
+
+        # select a random position
         if visible['pieceToPlay'] is not None:
-            move['pos'] = randint(0,15)
-            print("hhhhh",move['pos'])
+            move['pos'] = random.choice(ls_test)
 
-        # select the first remaining piece
+
+        # select a random piece
         test1 = visible['remainingPieces']
-        a = randint(0,len(test1))
+        a = random.randint(0,len(test1))
+        print(a)
 
         move['nextPiece'] = a
-        test = 1
         # apply the move to check for quarto
 
 
