@@ -155,10 +155,10 @@ class QuartoClient(game.GameClient):
     def _nextmove(self, state):
         visible = state._state['visible']
         move = {}
-        print(visible)
+        #print("BOARD",visible['board'])
 
         
-        #List of index of the free place to put a piece
+        #List of index where we can put a piece
         ls_test = [i for i,x in enumerate(visible['board']) if x == None]
         print("Liste Indice",ls_test)       
 
@@ -166,12 +166,26 @@ class QuartoClient(game.GameClient):
         if visible['pieceToPlay'] is not None:
             move['pos'] = random.choice(ls_test)
 
+        #List of the Ver/Hor/Diag piece
+        H_ls =[]
+        V_ls = []
+        D_ls = [[],[]]
+        for i in range(4):
+            ls = []
+            ls2 = []
+            for e in range(4):
+                ls.append(visible['board'][4 * e + i])
+                ls2.append(visible['board'][4 * i + e])
+            V_ls.append(ls)
+            H_ls.append(ls2)
+            D_ls[0].append(visible['board'][5 * i])
+            D_ls[1].append(visible['board'][3 + 3 * i])
+
+
 
         # select a random piece
         test1 = visible['remainingPieces']
         a = random.randint(0,len(test1))
-        print(a)
-
         move['nextPiece'] = a
         # apply the move to check for quarto
 
