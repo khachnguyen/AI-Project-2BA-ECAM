@@ -157,38 +157,6 @@ class QuartoServer(game.GameServer):
         else:
             self._state.applymove(move)
 
-
-class QuartoClient2(game.GameClient):
-    '''Class representing a client for the Quarto game.'''
-    def __init__(self, name, server, verbose=False):
-        super().__init__(server, QuartoState, verbose=verbose)
-        self.__name = name
-    
-    def _handle(self, message):
-        pass
-    
-    def _nextmove(self, state):
-        visible = state._state['visible']
-        move = {}
-
-        # select the first free position
-        if visible['pieceToPlay'] is not None:
-            move['pos'] = visible['board'].index(None)
-
-        # select the first remaining piece
-        move['nextPiece'] = 0
-
-        # apply the move to check for quarto
-        # applymove will raise if we announce a quarto while there is not
-        move['quarto'] = True
-        try:
-            state.applymove(move)
-        except:
-            del(move['quarto'])
-        
-        # send the move
-        return json.dumps(move)
-
 class QuartoClient(game.GameClient):
     '''Class representing a client for the Quarto game.'''
     def __init__(self, name, server, verbose=False):
@@ -212,7 +180,6 @@ class QuartoClient(game.GameClient):
         
         #First is a random AI  
         if verif.count(1) == 0 :
-            print("if")
             ls_test = [i for i,x in enumerate(visible['board']) if x == None]    
             
             # select a random position
@@ -237,7 +204,6 @@ class QuartoClient(game.GameClient):
             
         #When the number of free place per line/column/diag is brought down to 1, begin easyAI
         else:
-            print("else")
             easyAI.ttentry = lambda self: state 
             ai_algo_neg = Negamax(6, tt=TT(), win_score=90)         # Algorithm
             Quarto = easyAI([AI_Player(ai_algo_neg), AI_Player(ai_algo_neg)], state)
