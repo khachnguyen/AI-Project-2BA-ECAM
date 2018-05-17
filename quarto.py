@@ -12,8 +12,8 @@ import copy
 
 from lib import game
 from easyAI import TwoPlayersGame
-from easyAI import AI_Player, Negamax
-from easyAI.AI import Negamax, TT, SSS
+from easyAI import AI_Player
+from easyAI.AI import  TT, SSS, Negamax
 
 class QuartoState(game.GameState):
     '''Class representing a state for the Quarto game.'''
@@ -150,7 +150,6 @@ class QuartoServer(game.GameServer):
         super().__init__('Quarto', 2, QuartoState(), verbose=verbose)
     
     def applymove(self, move):
-        print("Hello MOVE SERVER",move,len(move),type(move))
         try:
             move = json.loads(move)
         except:
@@ -200,13 +199,51 @@ class QuartoClient(game.GameClient):
         pass
     
     def _nextmove(self, state):
-        easyAI.ttentry = lambda self: state
-        ai_algo = Negamax(2, tt=TT(), win_score=90)       
-        gameAI = easyAI([AI_Player(ai_algo), AI_Player(ai_algo)], state)
-        print("GET MOVE ???")
-        move = gameAI.get_move()        # find the best move possible
-        print("Hello MOVE CLIENT NEXTMOVE",move,len(move),type(move))
-        return json.dumps(move)
+        visible = state._state['visible']
+        move = {}
+          
+        #List of the number of free places on the board
+        verif = []
+        for i in range(4):
+            verif.append([visible['board'][4 * i + e] for e in range(4)].count(None))
+            verif.append([visible['board'][4 * e + i] for e in range(4)].count(None))
+        verif.append([visible['board'][5 * e ] for e in range(4)].count(None))
+        verif.append([visible['board'][3 + 3 * e] for e in range(4)].count(None))
+        
+        #First is a random AI  
+        if verif.count(1) == 0 :
+            print("if")
+            ls_test = [i for i,x in enumerate(visible['board']) if x == None]    
+            
+            # select a random position
+            
+            if visible['pieceToPlay'] is not None:
+                move['pos'] = random.choice(ls_test)
+                
+            # select a random piece
+            
+            test1 = visible['remainingPieces']
+            a = random.randint(0,len(test1)-2)
+            move['nextPiece'] = a   
+            
+            # applymove will raise if we announce a quarto while there is not            
+            move['quarto'] = True
+            try:
+                state.applymove(move)
+            except:
+                del(move['quarto'])
+        
+            return json.dumps(move)  # send the move
+            
+        #When the number of free place per line/column/diag is brought down to 1, begin easyAI
+        else:
+            print("else")
+            easyAI.ttentry = lambda self: state 
+            ai_algo_neg = Negamax(6, tt=TT(), win_score=90)         # Algorithm
+            Quarto = easyAI([AI_Player(ai_algo_neg), AI_Player(ai_algo_neg)], state)
+            best_move = Quarto.get_move()        # find the best move possible
+            print("BEST MOVE", best_move)
+            return json.dumps(best_move)  # send the Move
 
 class easyAI (TwoPlayersGame):
     def __init__(self,players,state): #initialization of the game
@@ -222,25 +259,37 @@ class easyAI (TwoPlayersGame):
                 move = {}
                 move['pos'] = i
                 move['nextPiece'] = piece
-                list_moves.append(move) 
-        print("Nombre de coup " ,len(list_moves))
+                move['quarto'] = True
+                if visible['board'][i] is None:
+                    try:
+                        CopyState = copy.deepcopy(self.state)
+                        CopyState.applymove(move)
+                    except:
+                        del (move['quarto'])
+                    list_moves.append(move)
         return list_moves
 
 
     def make_move(self, move): #transforms the game according to the move
-        position = move['pos']
         visible = self.state._state['visible']
-        if visible['board'][position] is None:
-            self.state.applymove(move)
-            print("Hello MOVE CLIENT MAKE MOVE",move,len(move),type(move))
+        if visible['board'][move['pos']] is None:
+            move['quarto'] = True
+            try:
+                self.state.applymove(move)
+            except:
+                del(move['quarto'])
         
 
-    def is_over(self): #check whether the game has ended
-        if self.state.winner() == -1 or 0 :
-            return False
-        else :
-            True
+    def lose(self):
+        return self.state.winner() == self.nopponent
 
+    def is_over(self): #check whether the game has ended
+        return self.lose()
+
+    def scoring(self):
+        return 100 if self.lose() else 0
+
+        
     
 
 if __name__ == '__main__':
